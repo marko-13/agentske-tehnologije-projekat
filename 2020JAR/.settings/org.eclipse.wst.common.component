@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?><project-modules id="moduleCoreId" project-version="1.5.0">
+    <wb-module deploy-name="2020JAR">
+        <wb-resource deploy-path="/" source-path="/src" tag="defaultRootSource"/>
+        <property name="java-output-path" value="/2020JAR/build/classes"/>
+        <property name="ClientProject" value="2020JARClient"/>
+        <property name="ClientJARURI" value="2020JARClient.jar"/>
+    </wb-module>
+</project-modules>
