@@ -6,14 +6,14 @@ public class AID implements Serializable{
 	
 	private static final long serialVersionUID = 1L;
 	private String name;
-	private AgentCenter host;
+	private Host host;
 	private AgentType type;
 	
 	public AID() {
 		
 	}
 
-	public AID(String name, AgentCenter host, AgentType type) {
+	public AID(String name, Host host, AgentType type) {
 		super();
 		this.name = name;
 		this.host = host;
@@ -28,11 +28,11 @@ public class AID implements Serializable{
 		this.name = name;
 	}
 
-	public AgentCenter getHost() {
+	public Host getHost() {
 		return host;
 	}
 
-	public void setHost(AgentCenter host) {
+	public void setHost(Host host) {
 		this.host = host;
 	}
 

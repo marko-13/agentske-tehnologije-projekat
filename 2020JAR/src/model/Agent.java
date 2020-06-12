@@ -2,7 +2,7 @@ package model;
 
 public class Agent implements AgentInterface{
 
-	private AID id;
+	protected AID id;
 	
 	public Agent() {
 		this.id = null;
@@ -35,7 +35,7 @@ public class Agent implements AgentInterface{
 	}
 
 	@Override
-	public void handleMEssage(ACLMessage message) {
+	public void handleMssage(ACLMessage message) {
 		// TODO Auto-generated method stub
 		System.out.println("AGENT HANDLE MESSAGE");
 		

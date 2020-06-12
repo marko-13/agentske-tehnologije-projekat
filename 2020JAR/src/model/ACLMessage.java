@@ -2,6 +2,7 @@ package model;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.UUID;
 
 public class ACLMessage implements Serializable{
 	
@@ -22,7 +23,6 @@ public class ACLMessage implements Serializable{
 	private Long replyBy;
 	
 	public ACLMessage() {
-		
 	}
 	
 	public ACLMessage(ACLMessage copy, int reciver) {
