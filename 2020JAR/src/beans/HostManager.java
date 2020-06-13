@@ -31,8 +31,8 @@ import ws.WSEndPoint;
 public class HostManager {
 
 	//private static final String PATHLOCAL = "http://localhost:8080/WAR2020/rest/server/";
-	private static final String PATH = "http://172.24.233.193:8080/2020WAR/rest/server/";
-	private static final String MASTERIP = "172.24.233.193";
+	private static final String PATH = "http://192.168.1.10:8080/2020WAR/rest/server/";
+	private static final String MASTERIP = "192.168.1.10";
 	
 	private String myIP = "";
 	private String myAlias = "";

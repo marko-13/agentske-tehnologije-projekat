@@ -152,12 +152,70 @@ public class WSEndPoint {
 			}
 			return;
 		}
+		// dodaj kad se doda novi tip agenta(pri pokretanju novog hosta)
+		else if (myMessage.getCategory() == 4) {
+			
+			System.out.println("\n\n-----------------------------------------------------------");
+			System.out.println("ADD AGENT TYPE FROM ANOTHER HOST MESSAGE");
+			try {
+				for (Session s : sessions.values()) {
+					System.out.println("WSEndPoint: " + msgJSON);
+					s.getBasicRemote().sendText(msgJSON);
+					
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		// obrisi
+		else if (myMessage.getCategory() == 5) {
+			
+			System.out.println("\n\n-----------------------------------------------------------");
+			System.out.println("DELETE AGENT TYPE FROM ANOTHER HOST MESSAGE");
+			try {
+				for (Session s : sessions.values()) {
+					System.out.println("WSEndPoint: " + msgJSON);
+					s.getBasicRemote().sendText(msgJSON);
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		// dodaj running agent kad se pokrene negde
+		else if (myMessage.getCategory() == 6) {
+			
+			System.out.println("\n\n-----------------------------------------------------------");
+			System.out.println("ADD RUNNING AGENT MESSAGE");
+			try {
+				for (Session s : sessions.values()) {
+					System.out.println("WSEndPoint: " + msgJSON);
+					s.getBasicRemote().sendText(msgJSON);
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		// obrisi
+		else if (myMessage.getCategory() == 7) {
+			
+			System.out.println("\n\n-----------------------------------------------------------");
+			System.out.println("DELETE RUNNING AGENT MESSAGE");
+			try {
+				for (Session s : sessions.values()) {
+					System.out.println("WSEndPoint: " + msgJSON);
+					s.getBasicRemote().sendText(msgJSON);
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 		else {
 			System.out.println("\n\n-----------------------------------------------------------");
 			System.out.println("Category error in method ws.echoTextMessage");
 			return;
 		}
 	
+		
 		
 	}
 	

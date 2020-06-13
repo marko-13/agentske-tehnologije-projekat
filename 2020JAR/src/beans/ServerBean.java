@@ -1,6 +1,8 @@
 package beans;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -24,6 +26,7 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 
+import model.AID;
 import model.Agent;
 import model.AgentType;
 import model.Host;
@@ -52,6 +55,9 @@ public class ServerBean {
 	
 	
 	// NOVI CVOR SE JAVLJA MASTERU I MASTER GA DODAJE U LISTU HOSTOVA
+	// REGISTRACIJA NOVOG CVORA
+	// KAD SE PODIGNE NOVI CVOR ON CE POSLATI POST REQUEST NA MASTER I MASTER CE DA PRODJE KROZ LISTU HOSTOVA I PROSLEDI IM INFORMACIJE O NOVOM CVORU
+	// NOVI CVOR SALJE POST REQUEST MASTERU SA INFORMACIJAMA O SEBI
 	@POST
 	@Path("/register")
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -76,7 +82,8 @@ public class ServerBean {
 	}
 	 
 	
-	
+	// MASTER PROSLEDJUJE OSTALIM CVOROVIMA INFORMACIJE O NOVOM STARTOVANOM CVORU
+	// MASTER SALJE POST REQUEST NA OSTALE CVOROVE SA INFORMACIJOM O NOVOM CVORU
 	@POST
 	@Path("/node")
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -88,6 +95,7 @@ public class ServerBean {
 		return "NEW NODE ADDED TO THE LIST OF HOSTS";
 	}
 	
+	// NOVI STARTOVANI CVOR DOBIJA INFORMACIJU OD MASTERA KOJI SVE HOSTOVI POSTOJE
 	@POST
 	@Path("/nodes")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -104,6 +112,8 @@ public class ServerBean {
 		return myHosts;
 	}
 	
+	// NOVI STARTOVANI CVOR DOBIJA INFORMACIJU OD MASTERA KOJI SVE ULOGOVANI KORISNICI POSTOJE
+	// NOVI CVOR SALJE POST REQUEST NA MASTER I DOBIJA LISTU ULOGOVANIH KORISNIKA
 	@POST
 	@Path("/users/loggedin")
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -120,6 +130,8 @@ public class ServerBean {
 		return myUsers;
 	}
 	
+	// NOVI STARTOVAN CVOR DOBIJA INFORMACIJU OD MASTERA KOJI SVE REGISTROVANI KORISNICI POSTOJE
+	// NOVI CVOR SALJE POST REQUEST NA MASTER I DOBIJA LISTU REGISTROVANIH KORISNIKA
 	@POST
 	@Path("/users/registered")
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -136,6 +148,7 @@ public class ServerBean {
 		return myUsers;
 	}
 	
+	// UKOLIKO HANDSHAKE NIJE USPEO ILI SE NIJE JAVIO NA HEARTBEATU NOVI CVOR JAVLJA MASTERU DA GA MASTER OBRISE IZ LISTE
 	@DELETE
 	@Path("/node/{alias}")
 	public String deleteNodeIfHandshakeHasFailed(@PathParam("alias")String alias) {
@@ -146,6 +159,7 @@ public class ServerBean {
 		
 		db.getHosts().remove(alias);
 		
+		// treba i da obrise sve ulogovane korisnike sa novog cvora - OVO BI TREBALO DA JE UVEK PRAZNO OSIM AKO NE OTKAZE HEARTBEAT
 		for (User u : db.getLoggedInUsers().values()) {
 			if (u.getHost().equals(hostIP)) {
 				System.out.println("REMOVING USERS: " + u.getUsername());
@@ -157,26 +171,41 @@ public class ServerBean {
 				ws.echoTextMessage(myMessage.getId().toString());
 			}
 		}
+		
+		//  master treba da obrise i agent types od novog cvora ukoliko su dodati u listu - OVO SE MOZE DESITI
+		for (AgentType aType : db.getAgentTypes().values()) {
+			if (aType.getModule().equals(hostIP)) {
+				System.out.println("REMOVING AGENT TYPE: " + aType.getName());
+				db.getAgentTypes().remove(aType.getName());
+				
+				// i obrisi sa frontenda
+				//                               content         category
+				Message myMessage = new Message(aType.getName(), 5);
+				db.getAllMessages().put(myMessage.getId(), myMessage);
+				ws.echoTextMessage(myMessage.getId().toString());
+			}
+		}
+		
+		// master treba da obrise i all running agents sa novog cvora - TO JE UVEK PRAZNO OSIM AKO NE OTKAZE HEARTBEAT
+		for (Agent aRunning : db.getAgentsRunning().values()) {
+			if (aRunning.getAid().getHost().getAddress().equals(hostIP)) {
+				System.out.println("REMOVING RUNNING AGENT: " + aRunning.getAid().getName());
+				db.getAgentsRunning().remove(aRunning.getAid().getName());
+				
+				// i obrisi sa frontenda
+				//                               content                 category
+				Message myMessage = new Message(aRunning.getAid().getName(), 7);
+				db.getAllMessages().put(myMessage.getId(), myMessage);
+				ws.echoTextMessage(myMessage.getId().toString());
+			}
+		}
 		System.out.println("BECAUSE HOST WAS STOPPED");
 		
 		return "OK";
 	}
 	
-	@DELETE
-	@Path("/agentType/{deletedHostIP}")
-	public String deleteAgentTypeThatWasOnDeletedHost(@PathParam("deletedHostIP")String deletedHostIP) {
-		for(AgentType aType : db.getAgentTypes().values()) {
-			if (aType.getModule().equals(deletedHostIP)) {
-				System.out.println("DELETING AGENT TYPE FROM STOPPED HOST");
-				db.getAgentTypes().remove(aType.getName());
-				
-				// uradi da se obrise i sa frontenda
-			}
-		}
-		
-		return "OK";
-	}
 	
+	// predestroy hosta poziva get request na master i master ovde treba da obrise podatke o tom hostu, njegove tipove agenta, running agents i logged in users
 	@GET
 	@Path("/node/informmaster/{alias}/{masterip}")
 	public String informMasterForDeletion(@PathParam("alias") String alias, @PathParam("masterip") String masterip) {
@@ -187,38 +216,82 @@ public class ServerBean {
 		System.out.println("REMOVING DELETED HOST FROM MASTER AND MASTER IS SENDING INFORMATION TO OTHER HOSTS");
 		db.getHosts().remove(alias);
 		// obrisi i sve tipove agenata iz ugasenog cvora
+		// brisanje sa fronta sa ostalih hostova je odradjeno u DELETE server/agentType/hostIP
+		// brisanje sa fronta mastera je ovde u for petlji
 		for(AgentType aType : db.getAgentTypes().values()) {
 			if (aType.getModule().equals(hostIP)) {
 				System.out.println("DELETING AGENT TYPE FROM STOPPED HOST");
 				db.getAgentTypes().remove(aType.getName());
+				// i obrisi sa frontenda na masteru
+				//                               content         category
+				Message myMessage = new Message(aType.getName(), 5);
+				db.getAllMessages().put(myMessage.getId(), myMessage);
+				ws.echoTextMessage(myMessage.getId().toString());
 				
-				// prodji kroz sve hostove i obrisi i iz njih
-				for (Host host : db.getHosts().values()) {
-					if (host.getAddress().equals(masterip)) {
+			}
+		}
+		// prodji kroz sve hostove i obrisi i iz njih
+		for (Host host : db.getHosts().values()) {
+			if (host.getAddress().equals(masterip)) {
+				continue;
+			}
+			String hostPath = "http://" + host.getAddress() + ":8080/2020WAR/rest/server/agentType/" + hostIP;
+			
+			try {
+				ResteasyClient client = new ResteasyClientBuilder().build();
+				ResteasyWebTarget target = client.target(hostPath);
+				Response res = target.request().delete();
+				String ret = res.readEntity(String.class);
+				System.out.println("DELETE AGENT TYPE FROM OTHER HOSTS RET: " + ret);
+			}
+			catch (Exception e) {
+				System.out.println("ERROR IN AGENT TYPE DELETION");
+				return "Error";
+			}
+		}
+
+		
+		// obrisi sve running agents koji se nalaze na ugasenom cvoru sa ostalih cvorova
+		for(Agent aRunning : db.getAgentsRunning().values()) {
+			if (aRunning.getAid().getHost().getAddress().equals(hostIP)) {
+				System.out.println("DELETING RUNNING AGENT FROM STOPPED HOST");
+				db.getAgentsRunning().remove(aRunning.getAid().getName());
+				// i obrisi sa frontenda na masteru
+				//                               content                 category
+				Message myMessage = new Message(aRunning.getAid().getName(), 7);
+				db.getAllMessages().put(myMessage.getId(), myMessage);
+				ws.echoTextMessage(myMessage.getId().toString());
+				
+				// prodji kroz sve ostale hostove i obrisi i iz njih
+				for (Host h : db.getHosts().values()) {
+					if (h.getAddress().equals(masterip)) {
 						continue;
 					}
-					String hostPath = "http://" + host.getAddress() + ":8080/2020WAR/rest/server/agentType/" + hostIP;
 					
-					try {
-						ResteasyClient client = new ResteasyClientBuilder().build();
-						ResteasyWebTarget target = client.target(hostPath);
-						Response res = target.request().delete();
-						String ret = res.readEntity(String.class);
-						System.out.println("DELETE AGENT TYPE FROM OTHER HOSTS RET: " + ret);
-					}
-					catch (Exception e) {
-						System.out.println("ERROR IN NODE DELETION");
-						return "Error";
-					}
 				}
 			}
 		}
-		// URADITI DA SE OBRISE I SA FRONTA AGENT TYPES
+		for (Host host : db.getHosts().values()) {
+			if (host.getAddress().equals(masterip)) {
+				continue;
+			}
+			String hostPath = "http://" + host.getAddress() + ":8080/2020WAR/rest/server/agentRunning/" + hostIP;
+			
+			try {
+				ResteasyClient client = new ResteasyClientBuilder().build();
+				ResteasyWebTarget target = client.target(hostPath);
+				Response res = target.request().delete();
+				String ret = res.readEntity(String.class);
+				System.out.println("DELETE AGENT RUNNING FROM OTHER HOSTS RET: " + ret);
+			}
+			catch (Exception e) {
+				System.out.println("ERROR IN AGENT RUNNING DELETION");
+				return "Error";
+			}
+		}
 		
-		// obrisi sve running agents koji se nalaze na ugasenom cvoru sa ostalih cvorova
 		
-		
-		
+		// obrisi i sve ulogovane korisnike
 		for (User u : db.getLoggedInUsers().values()) {
 			if (u.getHost().equals(hostIP)) {
 				System.out.println("REMOVING USERS: " + u.getUsername());
@@ -230,7 +303,6 @@ public class ServerBean {
 				ws.echoTextMessage(myMessage.getId().toString());
 			}
 		}
-		
 		for (Host h : db.getHosts().values()) {
 			if (h.getAddress().equals(masterip)) {
 				continue;
@@ -253,6 +325,49 @@ public class ServerBean {
 		return "OK";
 	}
 	
+	// KORISTI SE KAD MASTER OBAVESTAVA DRUGE HOSTOVE DA JE NEKI OD HOSTOVA STOPIRAN
+	@DELETE
+	@Path("/agentType/{deletedHostIP}")
+	public String deleteAgentTypeThatWasOnDeletedHost(@PathParam("deletedHostIP")String deletedHostIP) {
+		for(AgentType aType : db.getAgentTypes().values()) {
+			if (aType.getModule().equals(deletedHostIP)) {
+				System.out.println("DELETING AGENT TYPE FROM STOPPED HOST ON RUNNING HOST");
+				db.getAgentTypes().remove(aType.getName());
+				
+				// uradi da se obrise i sa frontenda
+				// i obrisi sa frontenda
+				//                               content         category
+				Message myMessage = new Message(aType.getName(), 5);
+				db.getAllMessages().put(myMessage.getId(), myMessage);
+				ws.echoTextMessage(myMessage.getId().toString());
+			}
+		}
+		
+		return "OK";
+	}
+	
+	// KORISTI SE KAD MASTER OBAVESTAVA DRUGE HOSTOVE DA JE NEKI OD HOSTOVA STOPIRAN
+	@DELETE
+	@Path("/agentRunning/{deletedHostIP}")
+	public String deleteAgentRunningThatWasOnDeletedHOst(@PathParam("deletedHostIP")String deletedHostIP) {
+		for (Agent aRunning : db.getAgentsRunning().values()) {
+			if (aRunning.getAid().getHost().getAddress().equals(deletedHostIP)) {
+				System.out.println("DELETING AGENT RUNNING FROM STOPPED HOST ON RUNNING HOST");
+				db.getAgentsRunning().remove(aRunning.getAid().getName());
+				
+				// uradi da se obrise i sa frontends
+				// i obrisi sa frontenda
+				//                               content                 category
+				Message myMessage = new Message(aRunning.getAid().getName(), 7);
+				db.getAllMessages().put(myMessage.getId(), myMessage);
+				ws.echoTextMessage(myMessage.getId().toString());				
+			}
+		}
+		
+		return "OK";
+	}
+	
+	// HEARTBEAT
 	@GET
 	@Path("/node")
 	public String heartbeat() {
@@ -314,11 +429,6 @@ public class ServerBean {
 	@Path("/agents/classes")
 	@Produces(MediaType.APPLICATION_JSON)
 	public Collection<AgentType> getAgentTypes() {
-		
-		AgentType at = new AgentType("Test agent 1", "Modul 1");
-		db.getAgentTypes().put("Test agent 1", at);
-		System.out.println("\n\n-----------------------------------------------------------");
-		System.out.println("POGODIO GET AGENT TYPES ENDPOINT");
 	
 		return db.getAgentTypes().values();
 	}
@@ -363,5 +473,132 @@ public class ServerBean {
 	public Collection<Agent> getRunningAgents() {
 		
 		return db.getAgentsRunning().values();
+	}
+	
+	
+	// BITNOOOOOOO
+	// OVO TREBA POZVATI KAD SE KREIRA NOVI AGENT U KLASI AGENT BEAN
+	// kad se pokrene novi agent
+	// newRunning agent
+	// saljes masteru i master obavlja ovo dole u funkciji i prosledjuje ostalim hostovima
+	@POST
+	@Path("/hostStartedNewAgent")
+	@Consumes(MediaType.APPLICATION_JSON)
+	public Response hostStartedNewAgent(Agent agent) {
+		
+		
+		InetAddress ip = null;
+		try {
+			ip = InetAddress.getLocalHost();
+			System.out.println("New servers IP address: " + ip.getHostAddress());
+			System.out.println("New servers host name: " + ip.getHostName());
+			
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+			return Response.status(400).build();
+		}
+		// prvo prosledi svim hostovima
+		for (Host h : db.getHosts().values()) {
+			// ako je to cvor iz koga je pozvano preskoci jer je on vec dodao
+			if (h.getAddress().equals(agent.getAid().getHost().getAddress())) {
+				continue;
+			}
+			// ako si na masteru preskoci
+			if (h.getAddress().equals(ip.getHostAddress())) {
+				continue;
+			}
+			String hostPath = "http://" + h.getAddress() + ":8080/2020WAR/rest/server/newAgentRunning/";
+			ResteasyClient client = new ResteasyClientBuilder().build();
+			ResteasyWebTarget target = client.target(hostPath);
+			Response res = target.request(MediaType.APPLICATION_JSON).post(Entity.entity(new Agent(new AID(agent.getAid().getName(), agent.getAid().getHost(), agent.getAid().getType())), MediaType.APPLICATION_JSON));
+			String ret = res.readEntity(String.class);
+			System.out.println(ret);
+		}
+		
+		db.getAgentsRunning().put(agent.getAid().getName(), agent);
+		// obavesti i frontend
+		Message myMessage = new Message(agent.getAid().getName(), 6);
+		db.getAllMessages().put(myMessage.getId(), myMessage);
+		ws.echoTextMessage(myMessage.getId().toString());
+		
+		return Response.status(200).build();
+	}
+	
+	// poziva se iz host started new agent
+	@POST
+	@Path("/newAgentRunning")
+	@Consumes(MediaType.APPLICATION_JSON)
+	public String addNewRunningAgent(Agent agent) {
+		
+		db.getAgentsRunning().put(agent.getAid().getName(), agent);
+		// obavesti i frontend
+		Message myMessage = new Message(agent.getAid().getName(), 6);
+		db.getAllMessages().put(myMessage.getId(), myMessage);
+		ws.echoTextMessage(myMessage.getId().toString());
+		
+		return "OK";
+	}
+	
+	// BITNOOOOO
+	// pozovi ovo i kad neko zaustavi agent u agentbeanu
+	// kad se zaustavi agent
+	// stop running agent
+	// saljes masteru 
+	@POST
+	@Path("/hostStoppedAgent")
+	@Consumes(MediaType.APPLICATION_JSON)
+	public Response hostStoppedAgent(Agent agent) {
+		
+		
+		InetAddress ip = null;
+		try {
+			ip = InetAddress.getLocalHost();
+			System.out.println("New servers IP address: " + ip.getHostAddress());
+			System.out.println("New servers host name: " + ip.getHostName());
+			
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+			return Response.status(400).build();
+		}
+		// prvo prosledi svim hostovima
+		for (Host h : db.getHosts().values()) {
+			// ako je to cvor iz koga je pozvano preskoci jer je on vec dodao
+			if (h.getAddress().equals(agent.getAid().getHost().getAddress())) {
+				continue;
+			}
+			// ako si na masteru preskoci
+			if (h.getAddress().equals(ip.getHostAddress())) {
+				continue;
+			}
+			String hostPath = "http://" + h.getAddress() + ":8080/2020WAR/rest/server/newAgentStopped/";
+			ResteasyClient client = new ResteasyClientBuilder().build();
+			ResteasyWebTarget target = client.target(hostPath);
+			Response res = target.request(MediaType.APPLICATION_JSON).post(Entity.entity(new Agent(new AID(agent.getAid().getName(), agent.getAid().getHost(), agent.getAid().getType())), MediaType.APPLICATION_JSON));
+			String ret = res.readEntity(String.class);
+			System.out.println(ret);
+		}
+		
+		db.getAgentsRunning().remove(agent.getAid().getName());
+		// obavesti i frontend
+		Message myMessage = new Message(agent.getAid().getName(), 7);
+		db.getAllMessages().put(myMessage.getId(), myMessage);
+		ws.echoTextMessage(myMessage.getId().toString());
+		
+		return Response.status(200).build();
+	}
+	
+	// pozove se iz host stopped new agent
+	@POST
+	@Path("/newAgentStopped")
+	@Consumes(MediaType.APPLICATION_JSON)
+	public String newAgentStopped(Agent agent) {
+		
+		db.getAgentsRunning().remove(agent.getAid().getName());
+		// obavesti i frontend
+		Message myMessage = new Message(agent.getAid().getName(), 7);
+		db.getAllMessages().put(myMessage.getId(), myMessage);
+		ws.echoTextMessage(myMessage.getId().toString());
+		
+		return "OK";
 	}
 }
