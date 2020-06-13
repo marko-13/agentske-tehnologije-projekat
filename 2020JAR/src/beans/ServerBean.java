@@ -162,6 +162,21 @@ public class ServerBean {
 		return "OK";
 	}
 	
+	@DELETE
+	@Path("/agentType/{deletedHostIP}")
+	public String deleteAgentTypeThatWasOnDeletedHost(@PathParam("deletedHostIP")String deletedHostIP) {
+		for(AgentType aType : db.getAgentTypes().values()) {
+			if (aType.getModule().equals(deletedHostIP)) {
+				System.out.println("DELETING AGENT TYPE FROM STOPPED HOST");
+				db.getAgentTypes().remove(aType.getName());
+				
+				// uradi da se obrise i sa frontenda
+			}
+		}
+		
+		return "OK";
+	}
+	
 	@GET
 	@Path("/node/informmaster/{alias}/{masterip}")
 	public String informMasterForDeletion(@PathParam("alias") String alias, @PathParam("masterip") String masterip) {
@@ -171,6 +186,38 @@ public class ServerBean {
 		
 		System.out.println("REMOVING DELETED HOST FROM MASTER AND MASTER IS SENDING INFORMATION TO OTHER HOSTS");
 		db.getHosts().remove(alias);
+		// obrisi i sve tipove agenata iz ugasenog cvora
+		for(AgentType aType : db.getAgentTypes().values()) {
+			if (aType.getModule().equals(hostIP)) {
+				System.out.println("DELETING AGENT TYPE FROM STOPPED HOST");
+				db.getAgentTypes().remove(aType.getName());
+				
+				// prodji kroz sve hostove i obrisi i iz njih
+				for (Host host : db.getHosts().values()) {
+					if (host.getAddress().equals(masterip)) {
+						continue;
+					}
+					String hostPath = "http://" + host.getAddress() + ":8080/2020WAR/rest/server/agentType/" + hostIP;
+					
+					try {
+						ResteasyClient client = new ResteasyClientBuilder().build();
+						ResteasyWebTarget target = client.target(hostPath);
+						Response res = target.request().delete();
+						String ret = res.readEntity(String.class);
+						System.out.println("DELETE AGENT TYPE FROM OTHER HOSTS RET: " + ret);
+					}
+					catch (Exception e) {
+						System.out.println("ERROR IN NODE DELETION");
+						return "Error";
+					}
+				}
+			}
+		}
+		// URADITI DA SE OBRISE I SA FRONTA AGENT TYPES
+		
+		// obrisi sve running agents koji se nalaze na ugasenom cvoru sa ostalih cvorova
+		
+		
 		
 		for (User u : db.getLoggedInUsers().values()) {
 			if (u.getHost().equals(hostIP)) {

@@ -1,4 +1,3 @@
 Manifest-Version: 1.0
-Class-Path: 2020JARClient.jar
+Class-Path: JAR2020Client.jar
 Dependencies: deployment.2020EAR.ear.2020WAR.war
-

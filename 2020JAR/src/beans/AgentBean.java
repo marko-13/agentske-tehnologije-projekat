@@ -47,8 +47,19 @@ public class AgentBean{
 	@Produces(MediaType.APPLICATION_JSON)
 	public Collection<AgentType> getAgentTypes() {
 		
-		AgentType at = new AgentType("Test agent 1", "Modul 1");
-		db.getAgentTypes().put("Test agent 1", at);
+		// MODUL AGENTA JE IP ADRESA HOSTA
+		InetAddress ip = null;
+		try {
+			ip = InetAddress.getLocalHost();
+			System.out.println("New servers IP address: " + ip.getHostAddress());
+			System.out.println("New servers host name: " + ip.getHostName());
+			
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+			return null;
+		}
+		AgentType at = new AgentType("Test agent 1", ip.getHostAddress());
+		db.getAgentTypes().put(at.getName()+at.getModule(), at);
 		System.out.println("\n\n-----------------------------------------------------------");
 		System.out.println("POGODIO GET AGENT TYPES ENDPOINT");
 	
