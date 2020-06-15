@@ -5,10 +5,18 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import javax.annotation.Resource;
 //import javax.annotation.Resource;
 import javax.ejb.EJB;
 import javax.ejb.LocalBean;
 import javax.ejb.Stateless;
+import javax.jms.ConnectionFactory;
+import javax.jms.Queue;
+import javax.jms.QueueConnection;
+import javax.jms.QueueSender;
+import javax.jms.QueueSession;
+import javax.jms.Session;
+import javax.jms.TextMessage;
 //import javax.jms.ConnectionFactory;
 //import javax.jms.Queue;
 //import javax.jms.QueueConnection;
@@ -47,12 +55,12 @@ public class ChatBean implements ChatRemote, ChatLocal {
 	@EJB
 	WSEndPoint ws;
 	
-	/*
+	
 	@Resource(mappedName = "java:/ConnectionFactory")
 	private ConnectionFactory connectionFactory;
 	@Resource(mappedName = "java:jboss/exported/jms/queue/mojQueue")
 	private Queue queue;
-	*/
+	
 	
 	
 	// TEST
@@ -61,10 +69,23 @@ public class ChatBean implements ChatRemote, ChatLocal {
 	@Produces(MediaType.TEXT_PLAIN)
 	public String test() {
 				
+		try {
+			QueueConnection connection = (QueueConnection) connectionFactory.createConnection("guest", "guest.guest.1");
+			QueueSession session = connection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
+			QueueSender sender = session.createSender(queue);
+			// create and publish a message
+			TextMessage message = session.createTextMessage();
+			message.setText("123456789");
+			sender.send(message);
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
 		return "OK";
 	}
 	
 	// NE KORISTI SE
+	@GET
+	@Path("/123/{text}")
 	public String post1(@PathParam("text") String text) {
 		System.out.println("\n\n-----------------------------------------------------------");
 		System.out.println("Received message: " + text);
@@ -72,7 +93,7 @@ public class ChatBean implements ChatRemote, ChatLocal {
 		// OVA LINIJA MENJA ZAKOMENTARISANI JMS JER JE SAD WS USPESNO INJEKTOVAN
 		//ws.echoTextMessage(text);
 		
-		/*try {
+		try {
 			QueueConnection connection = (QueueConnection) connectionFactory.createConnection("guest", "guest.guest.1");
 			QueueSession session = connection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
 			QueueSender sender = session.createSender(queue);
@@ -82,7 +103,7 @@ public class ChatBean implements ChatRemote, ChatLocal {
 			sender.send(message);
 		} catch (Exception ex) {
 			ex.printStackTrace();
-		}*/
+		}
 		
 		return "OK";
 	}

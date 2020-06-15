@@ -14,8 +14,13 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+
+import org.jboss.resteasy.client.jaxrs.ResteasyClient;
+import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
+import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 
 import model.AID;
 import model.Agent;
@@ -28,6 +33,8 @@ import ws.WSEndPoint;
 @LocalBean
 public class AgentBean{
 
+	private static final String MASTERIP = "192.168.1.10";
+	
 	@EJB
 	WSEndPoint ws;
 	
@@ -42,6 +49,7 @@ public class AgentBean{
 	}
 
 
+	// VRACA SVE TIPOVE AGENATA SA SVIH HOSTOVA
 	@GET
 	@Path("/classes")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -66,6 +74,7 @@ public class AgentBean{
 		return db.getAgentTypes().values();
 	}
 	
+	// VRACA Sve POKRENUTE AGENTE SA SVIH HOSTOVA
 	@GET
 	@Path("/running")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -77,6 +86,8 @@ public class AgentBean{
 		return db.getAgentsRunning().values();
 	}
 	
+	// POKRECE NOVOG AGENTA
+	// MORAS POZVATI I REQUEST DA MASTER OBAVESTI OSTALE CVOROVE
 	@PUT
 	@Path("/running/{type}/{name}")
 	public Response startAgent(@PathParam("type")String type, @PathParam("name")String name) {
@@ -125,7 +136,19 @@ public class AgentBean{
 		}
 		
 		// prodji kroz sve hostove i posalji im novog agenta koji je pokrenut
+		String hostPath = "http://" + MASTERIP + ":8080/2020WAR/rest/server/hostStartedNewAgent/";
 		
+		try {
+			ResteasyClient client = new ResteasyClientBuilder().build();
+			ResteasyWebTarget target = client.target(hostPath);
+			Response res = target.request(MediaType.APPLICATION_JSON).post(Entity.entity(new Agent(new AID(name, myHost, myAgentType)), MediaType.APPLICATION_JSON));
+			String ret = res.readEntity(String.class);
+			System.out.println("DELETE HOST RET: " + ret);
+		}
+		catch (Exception e) {
+			System.out.println("ERROR IN ADDING NEW RUNNING AGENT");
+			return Response.status(400).build();
+		}
 		
 		Agent newAgent = new Agent(new AID(name, myHost, myAgentType));
 		db.getAgentsRunning().put(name, newAgent);
@@ -151,8 +174,21 @@ public class AgentBean{
 		}
 		
 		// prodji kroz ostale hostove i njima isto izbrisi
+		String hostPath = "http://" + MASTERIP + ":8080/2020WAR/rest/server/hostStoppedAgent/";
 		
-		db.getAgentsRunning().remove(myAgent);
+		try {
+			ResteasyClient client = new ResteasyClientBuilder().build();
+			ResteasyWebTarget target = client.target(hostPath);
+			Response res = target.request(MediaType.APPLICATION_JSON).post(Entity.entity(new Agent(new AID(myAgent.getAid().getName(), myAgent.getAid().getHost(), myAgent.getAid().getType())), MediaType.APPLICATION_JSON));
+			String ret = res.readEntity(String.class);
+			System.out.println("DELETE HOST RET: " + ret);
+		}
+		catch (Exception e) {
+			System.out.println("ERROR IN ADDING NEW RUNNING AGENT");
+			return Response.status(400).build();
+		}
+		
+		db.getAgentsRunning().remove(myAgent.getAid().getName());
 		
 		return Response.status(200).entity("OK").build();
 	}
