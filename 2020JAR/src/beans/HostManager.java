@@ -18,6 +18,7 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 
+import model.AID;
 import model.Agent;
 import model.AgentType;
 import model.Host;
@@ -31,8 +32,8 @@ import ws.WSEndPoint;
 public class HostManager {
 
 	//private static final String PATHLOCAL = "http://localhost:8080/WAR2020/rest/server/";
-	private static final String PATH = "http://192.168.1.10:8080/2020WAR/rest/server/";
-	private static final String MASTERIP = "192.168.1.10";
+	private static final String PATH = "http://192.168.1.9:8080/2020WAR/rest/server/";
+	private static final String MASTERIP = "192.168.1.9";
 	
 	private String myIP = "";
 	private String myAlias = "";
@@ -229,11 +230,11 @@ public class HostManager {
 			ResteasyClient client = new ResteasyClientBuilder().build();
 			ResteasyWebTarget target = client.target(PATH+ "runningAgents");
 			Response res = target.request(MediaType.APPLICATION_JSON).get();
-			Agent[] ret = res.readEntity(Agent[].class);
+			AID[] ret = res.readEntity(AID[].class);
 			System.out.println("ALL AGENT TYPES ARE BEING PASSED TO NEW NODE");
-			for (Agent agent : ret) {
-				System.out.println("NEW AGENT TYPE ADDING: " + agent.getAid().getName());
-				db.getAgentsRunning().put(agent.getAid().getName(), agent);
+			for (AID agent : ret) {
+				System.out.println("NEW AGENT TYPE ADDING: " + agent.getName());
+				db.getAgentsRunning().put(agent.getName(), agent);
 				
 			}
 		} catch (Exception e) {

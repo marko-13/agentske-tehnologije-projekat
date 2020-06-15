@@ -187,14 +187,14 @@ public class ServerBean {
 		}
 		
 		// master treba da obrise i all running agents sa novog cvora - TO JE UVEK PRAZNO OSIM AKO NE OTKAZE HEARTBEAT
-		for (Agent aRunning : db.getAgentsRunning().values()) {
-			if (aRunning.getAid().getHost().getAddress().equals(hostIP)) {
-				System.out.println("REMOVING RUNNING AGENT: " + aRunning.getAid().getName());
-				db.getAgentsRunning().remove(aRunning.getAid().getName());
+		for (AID aRunning : db.getAgentsRunning().values()) {
+			if (aRunning.getHost().getAddress().equals(hostIP)) {
+				System.out.println("REMOVING RUNNING AGENT: " + aRunning.getName());
+				db.getAgentsRunning().remove(aRunning.getName());
 				
 				// i obrisi sa frontenda
 				//                               content                 category
-				Message myMessage = new Message(aRunning.getAid().getName(), 7);
+				Message myMessage = new Message(aRunning.getName(), 7);
 				db.getAllMessages().put(myMessage.getId(), myMessage);
 				ws.echoTextMessage(myMessage.getId().toString());
 			}
@@ -252,13 +252,13 @@ public class ServerBean {
 
 		
 		// obrisi sve running agents koji se nalaze na ugasenom cvoru sa ostalih cvorova
-		for(Agent aRunning : db.getAgentsRunning().values()) {
-			if (aRunning.getAid().getHost().getAddress().equals(hostIP)) {
+		for(AID aRunning : db.getAgentsRunning().values()) {
+			if (aRunning.getHost().getAddress().equals(hostIP)) {
 				System.out.println("DELETING RUNNING AGENT FROM STOPPED HOST");
-				db.getAgentsRunning().remove(aRunning.getAid().getName());
+				db.getAgentsRunning().remove(aRunning.getName());
 				// i obrisi sa frontenda na masteru
 				//                               content                 category
-				Message myMessage = new Message(aRunning.getAid().getName(), 7);
+				Message myMessage = new Message(aRunning.getName(), 7);
 				db.getAllMessages().put(myMessage.getId(), myMessage);
 				ws.echoTextMessage(myMessage.getId().toString());
 				
@@ -350,15 +350,15 @@ public class ServerBean {
 	@DELETE
 	@Path("/agentRunning/{deletedHostIP}")
 	public String deleteAgentRunningThatWasOnDeletedHOst(@PathParam("deletedHostIP")String deletedHostIP) {
-		for (Agent aRunning : db.getAgentsRunning().values()) {
-			if (aRunning.getAid().getHost().getAddress().equals(deletedHostIP)) {
+		for (AID aRunning : db.getAgentsRunning().values()) {
+			if (aRunning.getHost().getAddress().equals(deletedHostIP)) {
 				System.out.println("DELETING AGENT RUNNING FROM STOPPED HOST ON RUNNING HOST");
-				db.getAgentsRunning().remove(aRunning.getAid().getName());
+				db.getAgentsRunning().remove(aRunning.getName());
 				
 				// uradi da se obrise i sa frontends
 				// i obrisi sa frontenda
 				//                               content                 category
-				Message myMessage = new Message(aRunning.getAid().getName(), 7);
+				Message myMessage = new Message(aRunning.getName(), 7);
 				db.getAllMessages().put(myMessage.getId(), myMessage);
 				ws.echoTextMessage(myMessage.getId().toString());				
 			}
@@ -470,7 +470,7 @@ public class ServerBean {
 	@GET
 	@Path("/runningAgents")
 	@Produces(MediaType.APPLICATION_JSON)
-	public Collection<Agent> getRunningAgents() {
+	public Collection<AID> getRunningAgents() {
 		
 		return db.getAgentsRunning().values();
 	}
@@ -484,7 +484,7 @@ public class ServerBean {
 	@POST
 	@Path("/hostStartedNewAgent")
 	@Consumes(MediaType.APPLICATION_JSON)
-	public Response hostStartedNewAgent(Agent agent) {
+	public Response hostStartedNewAgent(AID agent) {
 		
 		
 		InetAddress ip = null;
@@ -500,7 +500,7 @@ public class ServerBean {
 		// prvo prosledi svim hostovima
 		for (Host h : db.getHosts().values()) {
 			// ako je to cvor iz koga je pozvano preskoci jer je on vec dodao
-			if (h.getAddress().equals(agent.getAid().getHost().getAddress())) {
+			if (h.getAddress().equals(agent.getHost().getAddress())) {
 				continue;
 			}
 			// ako si na masteru preskoci
@@ -510,14 +510,14 @@ public class ServerBean {
 			String hostPath = "http://" + h.getAddress() + ":8080/2020WAR/rest/server/newAgentRunning/";
 			ResteasyClient client = new ResteasyClientBuilder().build();
 			ResteasyWebTarget target = client.target(hostPath);
-			Response res = target.request(MediaType.APPLICATION_JSON).post(Entity.entity(new Agent(new AID(agent.getAid().getName(), agent.getAid().getHost(), agent.getAid().getType())), MediaType.APPLICATION_JSON));
+			Response res = target.request(MediaType.APPLICATION_JSON).post(Entity.entity((new AID(agent.getName(), agent.getHost(), agent.getType())), MediaType.APPLICATION_JSON));
 			String ret = res.readEntity(String.class);
 			System.out.println(ret);
 		}
 		
-		db.getAgentsRunning().put(agent.getAid().getName(), agent);
+		db.getAgentsRunning().put(agent.getName(), agent);
 		// obavesti i frontend
-		Message myMessage = new Message(agent.getAid().getName(), 6);
+		Message myMessage = new Message(agent.getName(), 6);
 		db.getAllMessages().put(myMessage.getId(), myMessage);
 		ws.echoTextMessage(myMessage.getId().toString());
 		
@@ -528,11 +528,11 @@ public class ServerBean {
 	@POST
 	@Path("/newAgentRunning")
 	@Consumes(MediaType.APPLICATION_JSON)
-	public String addNewRunningAgent(Agent agent) {
+	public String addNewRunningAgent(AID agent) {
 		
-		db.getAgentsRunning().put(agent.getAid().getName(), agent);
+		db.getAgentsRunning().put(agent.getName(), agent);
 		// obavesti i frontend
-		Message myMessage = new Message(agent.getAid().getName(), 6);
+		Message myMessage = new Message(agent.getName(), 6);
 		db.getAllMessages().put(myMessage.getId(), myMessage);
 		ws.echoTextMessage(myMessage.getId().toString());
 		
@@ -547,7 +547,7 @@ public class ServerBean {
 	@POST
 	@Path("/hostStoppedAgent")
 	@Consumes(MediaType.APPLICATION_JSON)
-	public Response hostStoppedAgent(Agent agent) {
+	public Response hostStoppedAgent(AID agent) {
 		
 		
 		InetAddress ip = null;
@@ -563,7 +563,7 @@ public class ServerBean {
 		// prvo prosledi svim hostovima
 		for (Host h : db.getHosts().values()) {
 			// ako je to cvor iz koga je pozvano preskoci jer je on vec dodao
-			if (h.getAddress().equals(agent.getAid().getHost().getAddress())) {
+			if (h.getAddress().equals(agent.getHost().getAddress())) {
 				continue;
 			}
 			// ako si na masteru preskoci
@@ -573,14 +573,14 @@ public class ServerBean {
 			String hostPath = "http://" + h.getAddress() + ":8080/2020WAR/rest/server/newAgentStopped/";
 			ResteasyClient client = new ResteasyClientBuilder().build();
 			ResteasyWebTarget target = client.target(hostPath);
-			Response res = target.request(MediaType.APPLICATION_JSON).post(Entity.entity(new Agent(new AID(agent.getAid().getName(), agent.getAid().getHost(), agent.getAid().getType())), MediaType.APPLICATION_JSON));
+			Response res = target.request(MediaType.APPLICATION_JSON).post(Entity.entity((new AID(agent.getName(), agent.getHost(), agent.getType())), MediaType.APPLICATION_JSON));
 			String ret = res.readEntity(String.class);
 			System.out.println(ret);
 		}
 		
-		db.getAgentsRunning().remove(agent.getAid().getName());
+		db.getAgentsRunning().remove(agent.getName());
 		// obavesti i frontend
-		Message myMessage = new Message(agent.getAid().getName(), 7);
+		Message myMessage = new Message(agent.getName(), 7);
 		db.getAllMessages().put(myMessage.getId(), myMessage);
 		ws.echoTextMessage(myMessage.getId().toString());
 		
@@ -591,11 +591,11 @@ public class ServerBean {
 	@POST
 	@Path("/newAgentStopped")
 	@Consumes(MediaType.APPLICATION_JSON)
-	public String newAgentStopped(Agent agent) {
+	public String newAgentStopped(AID agent) {
 		
-		db.getAgentsRunning().remove(agent.getAid().getName());
+		db.getAgentsRunning().remove(agent.getName());
 		// obavesti i frontend
-		Message myMessage = new Message(agent.getAid().getName(), 7);
+		Message myMessage = new Message(agent.getName(), 7);
 		db.getAllMessages().put(myMessage.getId(), myMessage);
 		ws.echoTextMessage(myMessage.getId().toString());
 		

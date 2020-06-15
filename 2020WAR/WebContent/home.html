@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Chat application</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.0/jquery.min.js"></script>
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.bundle.min.js"></script>
+
+<style>
+.btn {
+	margin: 0px 0px 5px 5px;
+	width: 100%;
+}
+
+.select{
+	margin: 5px 0px 0px 5px;
+}
+
+/* Chat containers */
+.chatContainer {
+  border: 2px solid #dedede;
+  background-color: #f1f1f1;
+  border-radius: 5px;
+  padding: 10px;
+  margin: 10px 0;
+}
+
+/* Darker chat container */
+.darker {
+  border-color: #ccc;
+  background-color: #ddd;
+}
+
+/* Clear floats */
+.chatContainer::after {
+  content: "";
+  clear: both;
+  display: table;
+}
+
+/* Style images */
+.chatContainer img {
+  float: left;
+  max-width: 60px;
+  width: 100%;
+  margin-right: 20px;
+  border-radius: 50%;
+}
+
+/* Style the right image */
+.chatContainer img.right {
+  float: right;
+  margin-left: 20px;
+  margin-right:0;
+}
+
+/* Style time text */
+.time-right {
+  float: right;
+  color: #aaa;
+}
+
+/* Style time text */
+.time-left {
+  float: left;
+  color: #999;
+}
+
+</style>
+
+<script>
+//FUNKCIJA ZA PRAVLJENJE UUIDa
+//*****************************
+function uuidv4() {
+	  return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+	    (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+	  )
+	}
+//*******************************
+//FUNKCIJA ZA PRETVARANJE TIMESTAMP U DATUM
+//*******************************
+function timeConverter(timestamp){
+  const a = new Date(timestamp * 1000);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const year = a.getFullYear();
+  const month = months[a.getMonth()];
+  const date = a.getDate();
+  const hour = a.getHours();
+  const min = a.getMinutes();
+  const sec = a.getSeconds();
+  const time = date + ' ' + month + ' ' + year + ' ' + hour + ':' + min;
+  return time;
+}
+//*******************************
+
+let socket;
+//let host = "ws://localhost:8080/WAR2020/ws/";
+let host = "ws://" + window.location.host + "/2020WAR/ws/";
+let username = '';
+let sessionId = '';
+
+
+
+window.onload = function() {	
+	username = sessionStorage.getItem('username');
+	$('#welcomeId').append(", " + username);
+	if (username === null) {
+		window.location.href = './index.html';
+		return;
+	}
+	alert("Logged in user: " + username);
+	
+	$.ajax({
+			url: "rest/chat/users/loggedin",
+			type: "GET",
+			success: function(data) {
+				$('#selectUser').empty();
+				$('#selectUser').append('<option disabled selected hidden="true">Select user</option>');
+				for (usr of data) {
+					$('#selectUser').append(new Option(usr,usr));
+				}
+				
+			}
+		});
+		
+		$.ajax({
+			url: "rest/chat/messages2/" + username,
+			type: "GET",
+			success: function(data) {
+				for (msgObject of data) {
+					$('#divMsg').append('<div class="container"><h4>From: '+msgObject.sender+'</h4><h5>Subject: '+msgObject.subject+'</h5><p>'+msgObject.content+'</p><hr></div>');
+				}
+			}
+		});
+		
+
+}
+
+$(document).ready(function() {
+	$("#btnSend").click(function() {
+		const msgText = $("#msgText").val();
+		const msgSubject = $('#msgSubject').val();
+		if (msgText === "" || msgText === undefined || msgSubject === "" || msgSubject === undefined) {
+			alert('Subject and message cannot be empty');
+			return;
+		}
+		
+		$('#divMsg').append('<div class="container darker"><h4 style="text-align: right;">You:</h4><h5 style="text-align: right;">'+msgSubject+'</h5><p style="text-align: right;">'+msgText+'</p><hr></div>');
+		
+		$.ajax({
+			url: "rest/chat/messages/all",
+			type: "POST",
+			data: JSON.stringify({"id": uuidv4(),
+								  "content":msgText,
+								  "sender":username,
+								  "receivers": [],
+								  "timeStamp": Date.now(),
+								  "subject":msgSubject,
+								  "category":0}),
+			contentType: "application/json",
+			dataType: "json",
+			complete: function(data) {
+				alert("Message sent to all active users(ili treba za registrovane?)");
+				console.log("Sent message to the server.");
+			}	
+		});
+	});
+	
+	$("#btnSendOne").click(function() {
+		const userUsername = $('#selectUser :selected').val();
+		const msgText = $("#msgText").val();
+		const msgSubject = $('#msgSubject').val();
+		if (msgText === "" || msgText === undefined || userUsername === "Select user" || msgSubject === "" || msgSubject === undefined) {
+			alert('Subject and message cannot be empty and user must be selected');
+			return;
+		}
+		
+		$('#divMsg').append('<div class="container darker"><h4 style="text-align: right;">You:</h4><h5 style="text-align: right;">'+msgSubject+'</h5><p style="text-align: right;">'+msgText+'</p><hr></div>');
+
+		const userArray = [];
+		userArray.push(userUsername);
+		$.ajax({
+			url: "rest/chat/messages/user",
+			type: "POST",
+			data: JSON.stringify({"id": uuidv4(),
+								  "content":msgText,
+								  "sender":username,
+								  "receivers": userArray,
+								  "timeStamp": Date.now(),
+								  "subject":msgSubject,
+								  "category":1}),
+			contentType: "application/json",
+			dataType: "json",
+			complete: function(data) {
+				alert("Message sent to user: " + userUsername);
+				console.log("Sent message to the server to one user.");
+			}	
+		});
+		
+	});
+	
+	$('#btnRefreshRegistered').click(function() {
+		alert('Refreshes automatically with websockets');
+		/*$.ajax({
+			url: "rest/chat/users/registered",
+			type: "GET",
+			success: function(data) {
+				$('#selectUser').empty();
+				$('#selectUser').append('<option disabled selected hidden="true">Select user</option>');
+				for (usr of data) {
+					$('#selectUser').append(new Option(usr,usr));
+				}
+				
+			}
+		});*/
+	});
+	
+	$('#btnLoggedIn').click(function() {
+		$.ajax({
+			url: "rest/chat/users/loggedin",
+			type: "GET",
+			success: function(data) {
+				let allUsers = "";
+				for (usr of data) {
+					allUsers += "Username: " + usr + "\n";
+				}
+				alert(allUsers);
+			}
+		});
+		
+	});
+	
+	$('#btnRegistered').click(function() {
+		$.ajax({
+			url: "rest/chat/users/registered",
+			type: "GET",
+			success: function(data) {
+				let allUsers = "";
+				for (usr of data) {
+					allUsers += "Username: " + usr + "\n";
+				}
+				alert(allUsers);
+			}
+		});
+		
+	});
+	
+	$('#btnInbox').click(function() {
+		$.ajax({
+			url: "rest/chat/messages/" + username,
+			type: "GET",
+			success: function(data) {
+				/*let allMessages = "";
+				for (usr of data) {
+					allUsers += "Username: " + usr + "\n";
+				}
+				alert(allUsers);*/
+			}
+		});
+		
+	});
+	
+	$('#btnLogout').click(function() {
+		
+		$.ajax({
+			url: "rest/chat/users/logout/" + username,
+			type: "DELETE",
+			data: JSON.stringify({"username":username, "password":"123"}),
+			contentType: "application/json",
+			complete: function(data) {
+				sessionStorage.setItem('username', '');
+				sessionId = '';
+				socket.close();
+				console.log("Logout successfull. \nUsername: " + username);
+				window.location.href='./index.html';
+			}
+		});
+	});
+	
+	try {
+		socket = new WebSocket(host + sessionStorage.getItem('username'));
+		console.log('connect: Socket Status: ' + socket.readyState);
+		console.log('Session opened with username: ' + sessionStorage.getItem('username'));
+		
+		socket.onopen = function() {
+			console.log('onopen: Socket Status: ' + socket.readyState + ' (open)');
+		}
+		
+		// ISPRAVLJENO teoretski korisnici mogu medjusobno da se brisu
+		// ako posalju poruku deleteUser:neko_korisnicko_ime
+		// ali da se ne pravi poseban websocket za sad ostaje ova implementacija
+		socket.onmessage = function(msg) {
+			const msgObject = JSON.parse(msg.data);
+			alert(msgObject);
+			// received public message
+			if(msgObject.category === 0) {
+				$('#divMsg').append('<div class="container"><h4>From: '+msgObject.sender+'</h4><h5>Subject: '+msgObject.subject+'</h5><p>'+msgObject.content+'</p><hr></div>');
+			}
+			// received private message
+			else if(msgObject.category === 1){
+				$('#divMsg').append('<div class="container"><h4>From: '+msgObject.sender+'</h4><h5>Subject: '+msgObject.subject+'</h5><p>'+msgObject.content+'</p><hr></div>');
+			}
+			// add user to active users list
+			else if(msgObject.category === 2){
+				console.log('add user: ' + msgObject.content + ' to active users list');
+				$('#selectUser').append(new Option(msgObject.content, msgObject.content));
+			}
+			// remove user from active users list
+			else if(msgObject.category === 3){
+				console.log('delete user: ' + msgObject.content + ' from active users list');
+				$('#selectUser option[value=' + msgObject.content + ']').remove();
+			}
+			else if (msgObject.category == 4){
+				alert("STIGLA PORUKA KATEGORIJA 4 NOVI TIP AGENTA");
+			}
+			else if (msgObject.category == 5){
+				alert("STIGLA PORUKA KATEGORIJA 5 BRISE TIP AGENTA");
+			}
+			else if (msgObject.category == 6){
+				alert("STIGLA PORUKA KATEGORIJA 6 NOVI AGENT POKRENUT");
+			}
+			else if (msgObject.category == 7){
+				alert("STIGLA PORUKA KATEGORIJA 6 AGENT ZAUSTAVLJEN");
+			}
+			/*
+			msgPrefix = msg.data.substring(0, 11);
+			if (msgPrefix === 'add123User:') {
+				msgUsername = msg.data.substring(11);
+				console.log('add user: ' + msgUsername + ' to active users list');
+			}
+			else if (msgPrefix === 'deleteUser:') {
+				msgUsername = msg.data.substring(11);
+				console.log('delete user: ' + msgUsername + ' from active users list');
+				$('#selectUser option[value=' + msgUsername + ']').remove();
+			}
+			else {
+				console.log('on message: ' + msg.data);
+				$('#divMsg').append('<div class="container"><p>Other:</p><p>'+msg.data+'</p></div>');
+			}*/
+			
+		}
+		
+		socket.onclose = function() {
+			console.log("WS closed")
+			sessionStorage.setItem('username', '');
+			socket = null;
+		}
+		
+	} catch(exception) {
+		console.log('Error: ' + exception);
+	}
+});
+</script>
+
+</head>
+<body>
+	<h1 id="welcomeId">Hello</h1>
+	
+	<a href="rest/chat/test">Test</a> <br /> <br />
+		
+	<table>
+		<tr>
+			<td valign="top"><label>Message: </label></td>
+			<td valign="top"><input id="msgSubject" class="form-control" type="text" placeholder="subject"/></td>
+			<td valign="top"><button id="btnSend" class="btn btn-primary">Send to all users</button></td>
+			<td valign="top"><button id="btnSendOne" class="btn btn-primary">Send to one user</button></td>
+
+		</tr>
+		
+		<tr>
+			<td></td>
+			<td valign="top" rowspan="3"><textarea id="msgText" class="form-control" rows="5" cols="60" placeholder="message"></textarea></td>
+			<td></td>
+			<td><select id="selectUser" class="select form-control">
+					<option value="" disabled selected hidden="true">Please select user</option>
+				</select>
+			</td>
+		</tr>
+		
+		<tr>
+			<td></td><td></td>
+			<td><button id="btnRefreshRegistered" class="btn btn-primary">Refresh list</button></td>
+		</tr>
+		
+		<tr>
+			<td><br/></td>
+		</tr>
+
+		
+		<tr>
+			<td></td><td></td><td></td>
+			<td align="right"><button id="btnInbox" class="btn btn-primary">Get my messages</button></td>
+		</tr>
+		<tr>
+			<td></td><td></td><td></td>
+			<td align="right" colspan="2"><button id="btnLoggedIn" class="btn btn-primary">Get logged in users</button></td>
+		</tr>
+		<tr>
+			<td></td><td></td><td></td>
+			<td align="right" colspan="2"><button id="btnRegistered" class="btn btn-primary">Get registered users</button></td>
+		</tr>
+		
+		<tr>
+			<td><br/></td>
+		</tr>
+		
+		<tr>
+			<td></td><td></td><td></td>
+			<td align="right" colspan="2"><button id="btnLogout" class="btn btn-primary">Logout</button></td>
+		</tr>
+	</table>
+	
+	<div id="divMsg" style="height: 450px; width: auto; overflow: scroll; margin: 10px 100px 0px 100px; border-style: solid;
+		border-color: dodgerblue; border-width: medium;">
+		<h2>Messages:</h2><br />
+
+	</div>
+</body>
+</html>

@@ -1,5 +1,6 @@
 package model;
 
+// AGENTSKI CENTAR JE KOD MENE HOST
 public class AgentCenter {
 	
 	private String alias;

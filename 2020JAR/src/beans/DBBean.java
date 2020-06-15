@@ -7,6 +7,7 @@ import javax.ejb.LocalBean;
 import javax.ejb.Singleton;
 
 import model.ACLMessage;
+import model.AID;
 import model.Agent;
 import model.AgentType;
 import model.Host;
@@ -17,7 +18,7 @@ import model.User;
 @Singleton
 public class DBBean {
 
-	private HashMap<String, Agent> agentsRunning = new HashMap<>();
+	private HashMap<String, AID> agentsRunning = new HashMap<>();
 	private HashMap<String, Agent> agentsStopped = new HashMap<>();
 	private HashMap<UUID, ACLMessage> aclMessages = new HashMap<>();
 	private HashMap<String, AgentType> agentTypes = new HashMap<>();
@@ -28,10 +29,18 @@ public class DBBean {
 	private HashMap<String, Host> hosts = new HashMap<>();
 	
 	public DBBean() {
-		agentsRunning = new HashMap<String, Agent>();
+		
+		AgentType at1 = new AgentType("IME1", "192.168.1.9");
+		AgentType at2 = new AgentType("IME2", "192.168.1.9");
+
+		
+		agentsRunning = new HashMap<String, AID>();
 		agentsStopped = new HashMap<String, Agent>();
 		aclMessages = new HashMap<UUID, ACLMessage>();
 		agentTypes = new HashMap<String, AgentType>();
+		
+		agentTypes.put(at1.getName(), at1);
+		agentTypes.put(at2.getName(), at2);
 		
 		users = new HashMap<String, User>();
 		loggedInUsers = new HashMap<String, User>(); 
@@ -61,12 +70,12 @@ public class DBBean {
 	}
 
 
-	public HashMap<String, Agent> getAgentsRunning() {
+	public HashMap<String, AID> getAgentsRunning() {
 		return agentsRunning;
 	}
 
 
-	public void setAgentsRunning(HashMap<String, Agent> agentsRunning) {
+	public void setAgentsRunning(HashMap<String, AID> agentsRunning) {
 		this.agentsRunning = agentsRunning;
 	}
 

@@ -19,30 +19,33 @@
 <script>
 
 $(document).ready(function() {
-	$("#btnLogin").click(function() {
+	
+	$("#btnRegister").click(function() {
 		const username = $('#username').val();
 		const password = $("#password").val();
-		if (password === "" || password === undefined || username === "" || username === undefined) {
-			alert("Please input username and password");
+		const name = $('#name').val();
+		if (password === "" || password === undefined || username === "" || username === undefined
+			|| name === "" || name === undefined) {
+			alert("Please input username, password and name");
 			return;
 		}
 		
 		$.ajax({
-			url: "rest/chat/users/login/",
+			url: "rest/chat/users/register/",
 			type: "POST",
-			data: JSON.stringify({"username":username,
-								  "password":password,
-								  "messages": []}),
+			data: JSON.stringify({"username":username, "password":password, "messages":null}),
 			contentType: "application/json",
 			// dataType: "json",
 			success: function(data) {
-				alert("Logging in user \nUsername: " + username + "\nPassword: " + password);
+				alert("Registered user \nUsername: " + username + "\nPassword: " + password);
 				sessionStorage.setItem('username', username);
 				window.location.href='./home.html';
-				console.log("User logged in");
+				console.log("User registered");
+				
 			},
 			error: function(err) {
-				alert(err.responseText);
+				console.log("Error");
+				alert("Error: username already exists");
 			}	
 		});
 		
@@ -57,6 +60,10 @@ $(document).ready(function() {
 	
 	<table>
 		<tr>
+			<td><label>Name: </label></td>
+			<td><input id="name" class="form-control" type="text" placeholder="username"/></td>
+		</tr>
+		<tr>
 			<td><label>Username: </label></td>
 			<td><input id="username" class="form-control" type="text" placeholder="username"/></td>
 		</tr>
@@ -65,10 +72,7 @@ $(document).ready(function() {
 			<td><input id="password" class="form-control" type="password" placeholder="password"></td>
 		</tr>
 		<tr>
-			<td align="right" colspan="2"><button id="btnLogin" class="btn btn-primary">Login</button></td>
-		</tr>
-		<tr>
-			<td align="right" colspan="2"><button class="btn btn-primary" onclick="window.location.href='./register.html'">Register</button></td>
+			<td align="right" colspan="2"><button id="btnRegister" class="btn btn-primary">Register</button></td>
 		</tr>
 	</table>
 	

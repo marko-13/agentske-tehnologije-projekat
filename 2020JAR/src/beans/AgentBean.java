@@ -33,7 +33,7 @@ import ws.WSEndPoint;
 @LocalBean
 public class AgentBean{
 
-	private static final String MASTERIP = "192.168.1.10";
+	private static final String MASTERIP = "192.168.1.9";
 	
 	@EJB
 	WSEndPoint ws;
@@ -78,7 +78,7 @@ public class AgentBean{
 	@GET
 	@Path("/running")
 	@Produces(MediaType.APPLICATION_JSON)
-	public Collection<Agent> getRunningAgents() {
+	public Collection<AID> getRunningAgents() {
 		
 		System.out.println("\n\n-----------------------------------------------------------");
 		System.out.println("POGODIO GET AGENT TYPES ENDPOINT");
@@ -96,8 +96,8 @@ public class AgentBean{
 		System.out.println("POGODIO PUT AGENT ENDPOINT");
 		// URADITI
 		// Ako vec postoji agent sa takvim imenom vrati error
-		for (Agent agent : db.getAgentsRunning().values()) {
-			if (agent.getAid().getName().equals(name)) {
+		for (AID agent : db.getAgentsRunning().values()) {
+			if (agent.getName().equals(name)) {
 				return Response.status(400).entity("Naming error").build();
 			}
 		}
@@ -141,7 +141,7 @@ public class AgentBean{
 		try {
 			ResteasyClient client = new ResteasyClientBuilder().build();
 			ResteasyWebTarget target = client.target(hostPath);
-			Response res = target.request(MediaType.APPLICATION_JSON).post(Entity.entity(new Agent(new AID(name, myHost, myAgentType)), MediaType.APPLICATION_JSON));
+			Response res = target.request(MediaType.APPLICATION_JSON).post(Entity.entity((new AID(name, myHost, myAgentType)), MediaType.APPLICATION_JSON));
 			String ret = res.readEntity(String.class);
 			System.out.println("DELETE HOST RET: " + ret);
 		}
@@ -150,10 +150,10 @@ public class AgentBean{
 			return Response.status(400).build();
 		}
 		
-		Agent newAgent = new Agent(new AID(name, myHost, myAgentType));
+		AID newAgent = (new AID(name, myHost, myAgentType));
 		db.getAgentsRunning().put(name, newAgent);
 		
-		return Response.status(200).entity(new Agent()).build();
+		return Response.status(200).build();
 	}
 	
 	@DELETE
@@ -162,9 +162,9 @@ public class AgentBean{
 		System.out.println("\n\n-----------------------------------------------------------");
 		System.out.println("POGODIO PUT AGENT ENDPOINT");
 		// URADITI
-		Agent myAgent = null;
-		for (Agent agent : db.getAgentsRunning().values()) {
-			if (agent.getAid().getName().equals(aid)) {
+		AID myAgent = null;
+		for (AID agent : db.getAgentsRunning().values()) {
+			if (agent.getName().equals(aid)) {
 				myAgent = agent;
 				break;
 			}
@@ -179,7 +179,7 @@ public class AgentBean{
 		try {
 			ResteasyClient client = new ResteasyClientBuilder().build();
 			ResteasyWebTarget target = client.target(hostPath);
-			Response res = target.request(MediaType.APPLICATION_JSON).post(Entity.entity(new Agent(new AID(myAgent.getAid().getName(), myAgent.getAid().getHost(), myAgent.getAid().getType())), MediaType.APPLICATION_JSON));
+			Response res = target.request(MediaType.APPLICATION_JSON).post(Entity.entity((new AID(myAgent.getName(), myAgent.getHost(), myAgent.getType())), MediaType.APPLICATION_JSON));
 			String ret = res.readEntity(String.class);
 			System.out.println("DELETE HOST RET: " + ret);
 		}
@@ -188,7 +188,7 @@ public class AgentBean{
 			return Response.status(400).build();
 		}
 		
-		db.getAgentsRunning().remove(myAgent.getAid().getName());
+		db.getAgentsRunning().remove(myAgent.getName());
 		
 		return Response.status(200).entity("OK").build();
 	}

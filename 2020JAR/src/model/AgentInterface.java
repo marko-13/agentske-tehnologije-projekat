@@ -1,10 +1,9 @@
 package model;
 
+import javax.ejb.Local;
+
+@Local
 public interface AgentInterface {
 
-	void init(AID aid);
-	void stop();
 	void handleMssage(ACLMessage message);
-	void setAid(AID aid);
-	AID getAid();
 }
