@@ -6,6 +6,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 import javax.ejb.EJB;
 import javax.ejb.LocalBean;
@@ -26,6 +27,7 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 
+import model.ACLMessage;
 import model.AID;
 import model.Agent;
 import model.AgentType;
@@ -600,5 +602,44 @@ public class ServerBean {
 		ws.echoTextMessage(myMessage.getId().toString());
 		
 		return "OK";
+	}
+	
+	
+	// ENDPOINT DA TI PROSLEDI ACL PORUKU
+	@GET
+	@Path("/newACLMessage")
+	@Consumes(MediaType.APPLICATION_JSON)
+	public String newACLMessage(ACLMessage message) {
+		JMSBuilder.sendACL(message);
+		UUID uuid = UUID.randomUUID();
+		
+		db.getAclMessages().put(uuid, message);
+		return "OK";
+	}
+	
+	// KAD TI NEMASTER CVOR POSALJE PODATKE IZ FAJLA
+	@GET
+	@Path("/csvData")
+	@Consumes(MediaType.APPLICATION_JSON)
+	public String csvData(String csvFile) {
+		
+		String temp_lines = db.getCsvData();
+		db.setCsvData(temp_lines + csvFile);
+		
+		return "OK";
+	}
+	
+	// KAD SE DOBIJE RESENJE PREDIKCIJE POSLAJI PREKO WEBSOCKETA NA FRONT
+	// kad se dobije poruka prosledi je na websocket
+	@GET
+	@Path("/prediction/{predictionVal}")
+	@Consumes(MediaType.APPLICATION_JSON)
+	public Response prediction(@PathParam("predictionVal")String predictionVal) {
+		
+		Message m = new Message(predictionVal, 8);
+		db.getAllMessages().put(m.getId(), m);
+		ws.echoTextMessage(m.getId().toString());
+		
+		return Response.status(200).build();
 	}
 }

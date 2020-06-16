@@ -211,6 +211,18 @@ public class WSEndPoint {
 				e.printStackTrace();
 			}
 		}
+		// posalji rezultat predikcije na frontend
+		else if (myMessage.getCategory() == 8) {
+			
+			try {
+				for (Session s : sessions.values()) {
+					System.out.println("WSEndPoint: " + msgJSON);
+					s.getBasicRemote().sendText(msgJSON);
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 		else {
 			System.out.println("\n\n-----------------------------------------------------------");
 			System.out.println("Category error in method ws.echoTextMessage");

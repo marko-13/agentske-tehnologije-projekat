@@ -20,15 +20,24 @@ import javax.jms.TextMessage;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+
+import org.jboss.resteasy.client.jaxrs.ResteasyClient;
+import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
+import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
+import dto.ACLMessageDTO;
 import model.ACLMessage;
+import model.AID;
 import model.Host;
 import model.Message;
+import model.Performative;
 
 @Stateless
 @Path("/messages")
@@ -38,63 +47,68 @@ public class MessagesBean {
 	@EJB
 	DBBean db;
 	
-	@Resource(mappedName = "java:/ConnectionFactory")
-	private ConnectionFactory connectionFactory;
-	@Resource(mappedName = "java:jboss/exported/jms/queue/mojQueue")
-	private Queue queue;
+	
 	
 	@POST
 	@Path("")
-	public Response postMessage(ACLMessage ACLMessage) {
+	public Response postMessage(ACLMessageDTO ACLMessageDTO) {
 		
 		System.out.println("\n\n-----------------------------------------------------------");
-		System.out.println("POGODIO POST MESSAGE ENDPOINT");
+		System.out.println("POGODIO POST ACL MESSAGE ENDPOINT");
 		InetAddress ip = null;
 		try {
 			ip = InetAddress.getLocalHost();
-			System.out.println("New servers IP address: " + ip.getHostAddress());
-			System.out.println("New servers host name: " + ip.getHostName());
 			
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 			return Response.status(400).build();
 		}
+		
+		ACLMessage myACL = new ACLMessage();
+		if (ACLMessageDTO.getPerformative().equals("REQUEST")) {
+			myACL.setPerformative(Performative.REQUEST);
+		}
+		else {
+			myACL.setPerformative(Performative.INFORM);
+		}
+
+		myACL.setReceivers(new AID[ACLMessageDTO.getReceivers().length]);
+		int brojac = 0;
+		for (String s : ACLMessageDTO.getReceivers()) {
+			myACL.getReceivers()[brojac] = db.getAgentsRunning().get(s);
+			brojac ++;
+		}
+		
+		myACL.setSender(db.getAgentsRunning().get(ACLMessageDTO.getSender()));
+		
 		// prodji kroz sve hostove i dodaj poruku u dbbean
 		for (Host h : db.getHosts().values()) {
 			if (h.getAddress().equals(ip.getHostAddress())) {
 				continue;
 			}
+			// URADI
 			//treba napisati rest za prijem poruke
 			// na drugim hostovima
+			try {
+				String hostPath = "http://" + h.getAddress() + ":8080/2020WAR/rest/server/newACLMessage/";
+				int numberOfRecivers = ACLMessageDTO.getReceivers().length;
+				ResteasyClient client = new ResteasyClientBuilder().build();
+				ResteasyWebTarget target = client.target(hostPath);
+				Response res = target.request(MediaType.APPLICATION_JSON).post(Entity.entity((new ACLMessage(myACL, numberOfRecivers)), MediaType.APPLICATION_JSON));
+				String ret = res.readEntity(String.class);
+				System.out.println("FORWARD ACL TO OTHER HOSTS: " + ret);
+			}
+			catch (Exception e) {
+				System.out.println("ERROR IN FORWARDING ACL MESSAGE TO ALL HOSTS");
+				return Response.status(400).build();
+			}
 		}
 		
 		UUID uuid = UUID.randomUUID();
 		
-		db.getAclMessages().put(uuid, ACLMessage);
-		
-		// napravi promenljivu text koja je json reprezentacija ACLMessage objekta
-		ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
-		String msgJSON = "";
-		try {
-			msgJSON = ow.writeValueAsString(ACLMessage);
-			
-		} catch (JsonProcessingException e) {
-			e.printStackTrace();
-		}
-		String text = msgJSON;
-		// JMS MESSAGE QUEUE
-		try {
-			QueueConnection connection = (QueueConnection) connectionFactory.createConnection("guest", "guest.guest.1");
-			QueueSession session = connection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
-			QueueSender sender = session.createSender(queue);
-			// create and publish a message
-			TextMessage message = session.createTextMessage();
-			message.setText(text);
-			sender.send(message);
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		}
-		
+		db.getAclMessages().put(uuid, myACL);
+
+		JMSBuilder.sendACL(myACL);
 		
 		return Response.status(200).entity("OK").build();
 	}

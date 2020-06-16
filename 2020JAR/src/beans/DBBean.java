@@ -28,10 +28,14 @@ public class DBBean {
 	private HashMap<UUID, Message> allMessages = new HashMap<>();
 	private HashMap<String, Host> hosts = new HashMap<>();
 	
+	private String csvData;
+	private double predictionVal;
+	
 	public DBBean() {
 		
-		AgentType at1 = new AgentType("IME1", "192.168.1.9");
-		AgentType at2 = new AgentType("IME2", "192.168.1.9");
+		AgentType at1 = new AgentType("COLLECTOR MASTER", "192.168.1.9");
+		AgentType at2 = new AgentType("PREDICTOR MASTER", "192.168.1.9");
+		AgentType at3 = new AgentType("MASTER MASTER", "192.168.1.9");
 
 		
 		agentsRunning = new HashMap<String, AID>();
@@ -41,11 +45,16 @@ public class DBBean {
 		
 		agentTypes.put(at1.getName(), at1);
 		agentTypes.put(at2.getName(), at2);
+		agentTypes.put(at3.getName(), at3);
+
 		
 		users = new HashMap<String, User>();
 		loggedInUsers = new HashMap<String, User>(); 
 		allMessages = new HashMap<UUID, Message>();
 		hosts = new HashMap<String, Host>();
+		
+		csvData = "";
+		predictionVal = 0;
 	}
 	
 
@@ -108,6 +117,28 @@ public class DBBean {
 
 	public void setAgentTypes(HashMap<String, AgentType> agentTypes) {
 		this.agentTypes = agentTypes;
+	}
+
+
+	
+	
+	public String getCsvData() {
+		return csvData;
+	}
+
+
+	public void setCsvData(String csvData) {
+		this.csvData = csvData;
+	}
+
+
+	public double getPredictionVal() {
+		return predictionVal;
+	}
+
+
+	public void setPredictionVal(double predictionVal) {
+		this.predictionVal = predictionVal;
 	}
 
 

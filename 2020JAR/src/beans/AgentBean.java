@@ -40,6 +40,7 @@ public class AgentBean{
 	
 	@EJB
 	DBBean db;
+
 	
 	@GET
 	@Path("/test")
@@ -134,6 +135,7 @@ public class AgentBean{
 		if (myHost.equals(null)) {
 			return Response.status(400).entity("IP error").build();
 		}
+				
 		
 		// prodji kroz sve hostove i posalji im novog agenta koji je pokrenut
 		String hostPath = "http://" + MASTERIP + ":8080/2020WAR/rest/server/hostStartedNewAgent/";
@@ -143,7 +145,7 @@ public class AgentBean{
 			ResteasyWebTarget target = client.target(hostPath);
 			Response res = target.request(MediaType.APPLICATION_JSON).post(Entity.entity((new AID(name, myHost, myAgentType)), MediaType.APPLICATION_JSON));
 			String ret = res.readEntity(String.class);
-			System.out.println("DELETE HOST RET: " + ret);
+			System.out.println("NEW AGENT RUNNING RET: " + ret);
 		}
 		catch (Exception e) {
 			System.out.println("ERROR IN ADDING NEW RUNNING AGENT");

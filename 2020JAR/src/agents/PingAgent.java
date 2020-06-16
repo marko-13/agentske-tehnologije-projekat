@@ -25,6 +25,10 @@ public class PingAgent extends Agent{
 	@EJB
 	DBBean db;
 	
+	public PingAgent() {
+		super();
+	}
+	
 	@Override
 	public void handleMssage(ACLMessage message) {
 		// TODO Auto-generated method stub

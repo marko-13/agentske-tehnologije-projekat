@@ -8,6 +8,10 @@ import model.Agent;
 @Stateful
 public class PongAgent extends Agent{
 
+	public PongAgent() {
+		super();
+	}
+	
 	@Override
 	public void handleMssage(ACLMessage message) {
 		// TODO Auto-generated method stub
