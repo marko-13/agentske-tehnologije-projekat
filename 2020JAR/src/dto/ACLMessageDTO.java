@@ -10,12 +10,14 @@ public class ACLMessageDTO {
 	private String performative;
 	private String sender;
 	private String[] receivers;
+	private String params;
 	
-	public ACLMessageDTO(String performative, String sender, String[] receivers) {
+	public ACLMessageDTO(String performative, String sender, String[] receivers, String params) {
 		super();
 		this.performative = performative;
 		this.sender = sender;
 		this.receivers = receivers;
+		this.params = params;
 	}
 
 	public ACLMessageDTO() {
@@ -45,6 +47,13 @@ public class ACLMessageDTO {
 	public void setReceivers(String[] receivers) {
 		this.receivers = receivers;
 	}
-	
+
+	public String getParams() {
+		return params;
+	}
+
+	public void setParams(String params) {
+		this.params = params;
+	}
 	
 }

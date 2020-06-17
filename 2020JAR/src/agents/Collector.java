@@ -12,6 +12,9 @@ import java.nio.file.Paths;
 
 import javax.ejb.EJB;
 import javax.ejb.Stateful;
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -57,8 +60,6 @@ public class Collector extends Agent{
             InetAddress ip = null;
     		try {
     			ip = InetAddress.getLocalHost();
-    			System.out.println("New servers IP address: " + ip.getHostAddress());
-    			System.out.println("New servers host name: " + ip.getHostName());
     			
     		} catch (UnknownHostException e) {
     			e.printStackTrace();
@@ -72,6 +73,7 @@ public class Collector extends Agent{
 	            // read the first line from the text file
 	            String line = br.readLine();
 
+	            line = br.readLine();
 	            // loop until all lines are read
 	            while (line != null) {
 
@@ -79,7 +81,7 @@ public class Collector extends Agent{
 	                // each line of
 	                // the file, using a comma as the delimiter
 	                String[] attributes = line.split(",");
-		            System.out.println(line);
+		            //System.out.println(line);
 		            all_lines += line;
 
 	                // read next line before looping
@@ -117,8 +119,26 @@ public class Collector extends Agent{
 			}
 			// AKO JE NA MASTERU SACUVAJ PODATKE U DBBEAN
 			else {
+				System.out.println("HELLO FROM MASTER COLLECTOR AGENT REQUEST");
+
+				Context ctx = null;
+				DBBean db = null;
+				try {
+					ctx = new InitialContext();
+				} catch (NamingException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				try {
+					db = (DBBean) ctx.lookup(DBBean.LOOKUP);
+				} catch (NamingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				String temp_lines = db.getCsvData();
+				System.out.println("TEMP LINES: " + temp_lines);
 				db.setCsvData(temp_lines + all_lines);
+				System.out.println(all_lines);
 				
 			}
 		}

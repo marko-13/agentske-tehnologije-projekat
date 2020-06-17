@@ -23,7 +23,6 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 
 import model.AID;
-import model.Agent;
 import model.AgentType;
 import model.Host;
 import ws.WSEndPoint;
@@ -55,32 +54,18 @@ public class AgentBean{
 	@Path("/classes")
 	@Produces(MediaType.APPLICATION_JSON)
 	public Collection<AgentType> getAgentTypes() {
-		
-		// MODUL AGENTA JE IP ADRESA HOSTA
-		InetAddress ip = null;
-		try {
-			ip = InetAddress.getLocalHost();
-			System.out.println("New servers IP address: " + ip.getHostAddress());
-			System.out.println("New servers host name: " + ip.getHostName());
-			
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-			return null;
-		}
-		AgentType at = new AgentType("Test agent 1", ip.getHostAddress());
-		db.getAgentTypes().put(at.getName()+at.getModule(), at);
+		// MODUL TIPA AGENTA JE IP ADRESA HOSTA
 		System.out.println("\n\n-----------------------------------------------------------");
 		System.out.println("POGODIO GET AGENT TYPES ENDPOINT");
 	
 		return db.getAgentTypes().values();
 	}
 	
-	// VRACA Sve POKRENUTE AGENTE SA SVIH HOSTOVA
+	// VRACA SVE POKRENUTE AGENTE SA SVIH HOSTOVA
 	@GET
 	@Path("/running")
 	@Produces(MediaType.APPLICATION_JSON)
 	public Collection<AID> getRunningAgents() {
-		
 		System.out.println("\n\n-----------------------------------------------------------");
 		System.out.println("POGODIO GET AGENT TYPES ENDPOINT");
 		
@@ -92,10 +77,8 @@ public class AgentBean{
 	@PUT
 	@Path("/running/{type}/{name}")
 	public Response startAgent(@PathParam("type")String type, @PathParam("name")String name) {
-		
 		System.out.println("\n\n-----------------------------------------------------------");
 		System.out.println("POGODIO PUT AGENT ENDPOINT");
-		// URADITI
 		// Ako vec postoji agent sa takvim imenom vrati error
 		for (AID agent : db.getAgentsRunning().values()) {
 			if (agent.getName().equals(name)) {
@@ -103,6 +86,7 @@ public class AgentBean{
 			}
 		}
 		
+		//--------------------------------------------------------
 		// Nadji tip agenta
 		AgentType myAgentType = null;
 		for (AgentType agentType : db.getAgentTypes().values()) {
@@ -115,7 +99,8 @@ public class AgentBean{
 			return Response.status(400).entity("Type does not exist").build();
 		}
 		
-		
+		//---------------------------------------------------------
+		// Nadji sa cijeg hosta je pokrenut agent
 		InetAddress ip = null;
 		try {
 			ip = InetAddress.getLocalHost();
@@ -137,6 +122,7 @@ public class AgentBean{
 		}
 				
 		
+		//--------------------------------------------------------------------------------
 		// prodji kroz sve hostove i posalji im novog agenta koji je pokrenut
 		String hostPath = "http://" + MASTERIP + ":8080/2020WAR/rest/server/hostStartedNewAgent/";
 		

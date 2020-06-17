@@ -3,7 +3,9 @@ package beans;
 import java.net.InetAddress;
 
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
 import javax.annotation.Resource;
@@ -20,6 +22,7 @@ import javax.jms.TextMessage;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -48,6 +51,16 @@ public class MessagesBean {
 	DBBean db;
 	
 	
+	@POST
+	@Path("/performatives")
+	@Produces(MediaType.APPLICATION_JSON)
+	public List<String> getPerformatives() {
+		List<String> ret = new ArrayList<String>();
+		for(Enum<Performative> e : Performative.values()) {
+			ret.add(e.toString());
+		}
+		return ret;
+	}
 	
 	@POST
 	@Path("")
@@ -64,22 +77,27 @@ public class MessagesBean {
 			return Response.status(400).build();
 		}
 		
-		ACLMessage myACL = new ACLMessage();
+		Performative tempPerformative = null;
+		AID tempSender = null;
+		AID[] tempReceivers = new AID[ACLMessageDTO.getReceivers().length];
+		
 		if (ACLMessageDTO.getPerformative().equals("REQUEST")) {
-			myACL.setPerformative(Performative.REQUEST);
+			tempPerformative = Performative.REQUEST;
 		}
 		else {
-			myACL.setPerformative(Performative.INFORM);
+			tempPerformative = Performative.INFORM;
 		}
 
-		myACL.setReceivers(new AID[ACLMessageDTO.getReceivers().length]);
+		tempSender = db.getAgentsRunning().get(ACLMessageDTO.getSender());
+		
 		int brojac = 0;
 		for (String s : ACLMessageDTO.getReceivers()) {
-			myACL.getReceivers()[brojac] = db.getAgentsRunning().get(s);
+			tempReceivers[brojac] = db.getAgentsRunning().get(s); 
 			brojac ++;
 		}
 		
-		myACL.setSender(db.getAgentsRunning().get(ACLMessageDTO.getSender()));
+		ACLMessage myACL = new ACLMessage(tempPerformative, tempSender, tempReceivers);
+		myACL.setLanguage(ACLMessageDTO.getParams());
 		
 		// prodji kroz sve hostove i dodaj poruku u dbbean
 		for (Host h : db.getHosts().values()) {
@@ -91,10 +109,9 @@ public class MessagesBean {
 			// na drugim hostovima
 			try {
 				String hostPath = "http://" + h.getAddress() + ":8080/2020WAR/rest/server/newACLMessage/";
-				int numberOfRecivers = ACLMessageDTO.getReceivers().length;
 				ResteasyClient client = new ResteasyClientBuilder().build();
 				ResteasyWebTarget target = client.target(hostPath);
-				Response res = target.request(MediaType.APPLICATION_JSON).post(Entity.entity((new ACLMessage(myACL, numberOfRecivers)), MediaType.APPLICATION_JSON));
+				Response res = target.request(MediaType.APPLICATION_JSON).post(Entity.entity((new ACLMessage(tempPerformative, tempSender, tempReceivers)), MediaType.APPLICATION_JSON));
 				String ret = res.readEntity(String.class);
 				System.out.println("FORWARD ACL TO OTHER HOSTS: " + ret);
 			}

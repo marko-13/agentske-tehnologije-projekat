@@ -2,6 +2,9 @@ package agents;
 
 import javax.ejb.EJB;
 import javax.ejb.Stateful;
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -25,9 +28,6 @@ public class Master extends Agent{
 	@EJB
 	WSEndPoint ws;
 	
-	@EJB
-	DBBean db;
-	
 	public Master() {
 		super();
 	}
@@ -41,6 +41,21 @@ public class Master extends Agent{
 	public void handleMssage(ACLMessage message) {
 		// TODO Auto-generated method stub
 		System.out.println("MASTER AGENT HANDLE MESSAGE");
+		
+		Context ctx = null;
+		DBBean db = null;
+		try {
+			ctx = new InitialContext();
+		} catch (NamingException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		try {
+			db = (DBBean) ctx.lookup(DBBean.LOOKUP);
+		} catch (NamingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 		if (message.getPerformative() == Performative.REQUEST) {
 			

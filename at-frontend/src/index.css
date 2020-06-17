@@ -1,0 +1,39 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+    /* Change background gradient here */
+    background-color: #637081;
+    background-image: linear-gradient(315deg, #637081 0%, #7c98b3 74%);
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+.my-button {
+  width: 100%;
+  margin: 5px 10px;
+}
+
+button a {
+  color: white;
+}
+
+.logger {
+  width: 100%;
+  height: 200px;
+  background-color: white;
+  overflow-y: auto;
+  border: 1px solid black;
+}
+
+.logger p {
+  padding: 1px 0px 1px 5px;
+  margin: 0px;
+}

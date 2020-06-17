@@ -30,7 +30,7 @@ import model.Message;
 public class WSEndPoint {
 	static HashMap<String, Session> sessions = new HashMap<>();
 	
-	public static String LOOKUP = "java:app/WAR2020/WSEndPoint!ws.WSEndPoint";
+	public static String LOOKUP = "java:app/2020WAR/WSEndPoint!ws.WSEndPoint";
 	
 	public static HashMap<String, Session> getSessions() {
 		return sessions;

@@ -25,6 +25,28 @@ public class ACLMessage implements Serializable{
 	public ACLMessage() {
 	}
 	
+	
+	
+	public ACLMessage(Performative performative, AID sender, AID[] receivers) {
+		super();
+		this.performative = performative;
+		this.sender = sender;
+		this.receivers = receivers;
+		this.replyTo = null;
+		this.content = "TEKSIC";
+		this.contentObj = null;
+		this.userArgs = null;
+		this.language = null;
+		this.encoding = null;
+		this.ontology = null;
+		this.protocol = null;
+		this.conversationID = null;
+		this.replyWith = null;
+		this.replyBy = null;
+	}
+
+
+
 	public ACLMessage(ACLMessage copy, int reciver) {
 		this.setSender(copy.getSender());
 		this.setReceivers(new AID[] { copy.getReceivers()[reciver] });

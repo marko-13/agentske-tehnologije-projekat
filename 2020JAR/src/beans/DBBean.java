@@ -18,6 +18,8 @@ import model.User;
 @Singleton
 public class DBBean {
 
+	public static String LOOKUP = "java:app/2020JAR/DBBean!beans.DBBean";
+
 	private HashMap<String, AID> agentsRunning = new HashMap<>();
 	private HashMap<String, Agent> agentsStopped = new HashMap<>();
 	private HashMap<UUID, ACLMessage> aclMessages = new HashMap<>();
@@ -52,9 +54,6 @@ public class DBBean {
 		loggedInUsers = new HashMap<String, User>(); 
 		allMessages = new HashMap<UUID, Message>();
 		hosts = new HashMap<String, Host>();
-		
-		csvData = "";
-		predictionVal = 0;
 	}
 	
 

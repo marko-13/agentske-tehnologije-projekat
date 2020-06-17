@@ -509,6 +509,7 @@ public class ServerBean {
 			if (h.getAddress().equals(ip.getHostAddress())) {
 				continue;
 			}
+			System.out.println("\n\n\n\n\nDA LI UDJE OVDE\n\n\n\n\n");
 			String hostPath = "http://" + h.getAddress() + ":8080/2020WAR/rest/server/newAgentRunning/";
 			ResteasyClient client = new ResteasyClientBuilder().build();
 			ResteasyWebTarget target = client.target(hostPath);

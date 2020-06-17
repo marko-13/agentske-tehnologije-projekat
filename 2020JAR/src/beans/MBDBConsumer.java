@@ -39,8 +39,8 @@ public class MBDBConsumer implements MessageListener{
 		}
 	}*/
 	
-	@EJB
-	WSEndPoint ws;
+	//@EJB
+	//WSEndPoint ws;
 	
 	@Override
 	public void onMessage(Message message) {
@@ -56,7 +56,6 @@ public class MBDBConsumer implements MessageListener{
 		try {
 			ACLMessage msg = (ACLMessage) ((ObjectMessage) message).getObject();
 			AID[] receivers = msg.getReceivers();
-			ws.echoTextMessage("New message in queue");
 			System.out.println("MESSAGE ON QUEUE! - " + message);
 			for (AID a : receivers) {
 				//am.msgToAgent(a, msg);
@@ -82,8 +81,10 @@ public class MBDBConsumer implements MessageListener{
 				}
 			}
 		} catch (JMSException e) {
+			System.out.println("MDBD Consumer exception");
 			e.printStackTrace();
 		} catch (Exception e) {
+			System.out.println("MDBD Consumer exception");
 			e.printStackTrace();
 		}
 		
