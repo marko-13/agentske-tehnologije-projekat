@@ -443,17 +443,21 @@ public class ServerBean {
 	public Response addAgentTypesFromNewNode(AgentType newAgentType) {
 		
 		if (!db.getAgentTypes().containsKey(newAgentType.getName())) {
-			
-			for (Host h : db.getHosts().values()) {
+			System.out.println("HERE");
+			/*for (Host h : db.getHosts().values()) {
 				String hostPath = "http://" + h.getAddress() + ":8080/2020WAR/rest/server/newAgentType/";
 				ResteasyClient client = new ResteasyClientBuilder().build();
 				ResteasyWebTarget target = client.target(hostPath);
 				Response res = target.request(MediaType.APPLICATION_JSON).post(Entity.entity(new AgentType(newAgentType.getName(), newAgentType.getModule()), MediaType.APPLICATION_JSON));
 				String ret = res.readEntity(String.class);
 				System.out.println(ret);
-			}
+			}*/
 			
 			db.getAgentTypes().put(newAgentType.getName(), newAgentType);
+			
+			Message m = new Message("NEW TYPE", 4);
+			db.getAllMessages().put(m.getId(), m);
+			ws.echoTextMessage(m.getId().toString());
 		}
 		
 		return Response.status(200).build();
@@ -501,10 +505,6 @@ public class ServerBean {
 		}
 		// prvo prosledi svim hostovima
 		for (Host h : db.getHosts().values()) {
-			// ako je to cvor iz koga je pozvano preskoci jer je on vec dodao
-			if (h.getAddress().equals(agent.getHost().getAddress())) {
-				continue;
-			}
 			// ako si na masteru preskoci
 			if (h.getAddress().equals(ip.getHostAddress())) {
 				continue;
@@ -607,7 +607,7 @@ public class ServerBean {
 	
 	
 	// ENDPOINT DA TI PROSLEDI ACL PORUKU
-	@GET
+	@POST
 	@Path("/newACLMessage")
 	@Consumes(MediaType.APPLICATION_JSON)
 	public String newACLMessage(ACLMessage message) {

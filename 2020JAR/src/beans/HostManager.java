@@ -153,7 +153,7 @@ public class HostManager {
 			try {
 				System.out.println("STEP2.1:\nNEW NODE WITH IP: " + myIP + " SENDING REQUEST TO MASTER TO INFORM MASTER ABOUT ALL AGENT TYPES");
 				ResteasyClient client = new ResteasyClientBuilder().build();
-				ResteasyWebTarget target = client.target(PATH+ "/newAgentTypeMaster");
+				ResteasyWebTarget target = client.target(PATH+ "newAgentTypeMaster");
 				Response res = target.request(MediaType.APPLICATION_JSON).post(Entity.entity(new AgentType(at1.getName(), at1.getModule()), MediaType.APPLICATION_JSON));
 				String ret = res.readEntity(String.class);
 				System.out.println(ret);

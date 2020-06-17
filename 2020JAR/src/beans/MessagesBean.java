@@ -99,8 +99,22 @@ public class MessagesBean {
 		ACLMessage myACL = new ACLMessage(tempPerformative, tempSender, tempReceivers);
 		myACL.setLanguage(ACLMessageDTO.getParams());
 		
+		
+		// ako ovaj agent nije kod mene, prosledi ga pravom hostu
+		System.out.println("\n\n\n\n\nPROVERA: " + tempSender.getHost().getAddress());
+		if (!tempSender.getHost().getAddress().equals(ip.getHostAddress())) {
+			String hostPath = "http://" + tempSender.getHost().getAddress() + ":8080/2020WAR/rest/messages/";
+			ResteasyClient client = new ResteasyClientBuilder().build();
+			ResteasyWebTarget target = client.target(hostPath);
+			Response res = target.request(MediaType.APPLICATION_JSON).post(Entity.entity((new ACLMessageDTO(ACLMessageDTO.getPerformative(), ACLMessageDTO.getSender(), ACLMessageDTO.getReceivers(), ACLMessageDTO.getParams())), MediaType.APPLICATION_JSON));
+			String ret = res.readEntity(String.class);
+			System.out.println("FORWARD ACL TO HOST WHERE AGENT REALY IS: " + ret);
+			return Response.status(200).build();
+		}
+		
 		// prodji kroz sve hostove i dodaj poruku u dbbean
 		for (Host h : db.getHosts().values()) {
+			// da ne salje sam sebi
 			if (h.getAddress().equals(ip.getHostAddress())) {
 				continue;
 			}

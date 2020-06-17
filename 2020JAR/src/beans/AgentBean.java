@@ -113,7 +113,7 @@ public class AgentBean{
 		}
 		Host myHost = null;
 		for (Host host : db.getHosts().values()) {
-			if (host.getAddress().equals(ip.getHostAddress())) {
+			if (host.getAddress().equals(myAgentType.getModule())) {
 				myHost = host;
 			}
 		}
