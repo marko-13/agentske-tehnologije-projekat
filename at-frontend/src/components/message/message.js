@@ -39,9 +39,10 @@ class Message extends React.Component {
             //receivers: [recieverName + "$localhost:8080$master$" + recieverType + "$agents"]
             sender: senderName,
             receivers: [recieverName],
-            params: this.msgCountry + '!' + this.msgRND + '!' + this.msgMarketing + '!' + this.msgAdministration
+            params: this.state.msgCountry + '!' + this.state.msgRND + '!' + this.state.msgMarketing + '!' + this.state.msgAdministration
         }
 
+        alert(this.state.msgCountry + '!' + this.state.msgRND + '!' + this.state.msgMarketing + '!' + this.state.msgAdministration);
         axios.post("rest/messages/", sendData)
             .then(res => alert(res.data))
             .catch(err => console.log(err.response));

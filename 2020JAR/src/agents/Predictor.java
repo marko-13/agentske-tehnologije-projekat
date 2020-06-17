@@ -117,7 +117,7 @@ public class Predictor extends Agent{
 			HttpURLConnection conn = null;
 	        DataOutputStream os = null;
 	        try{
-	            URL url = new URL("http://192.168.1.9:5000/pred/1/"+ paramsSplit[1] + "/" + paramsSplit[2] + "/" + paramsSplit[3] + "/"); //important to add the trailing slash after add
+	            URL url = new URL("http://192.168.1.9:5000/pred/1/"+ paramsSplit[1] + "/" + paramsSplit[2] + "/" + paramsSplit[3]); //important to add the trailing slash after add
 	            String[] inputData2 = {"{\"x\": 5, \"y\": 8, \"text\":\"random text\"}",
 	                    "{\"x\":5, \"y\":14, \"text\":\"testing\"}"};
 	            String[] inputData = {"{\"data\": \"" + db.getCsvData() + "\"}"};
